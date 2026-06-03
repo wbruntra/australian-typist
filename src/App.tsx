@@ -26,9 +26,9 @@ function tokenizeNumber(n: number): string[] {
       const parts = word.split("-");
       for (let i = 0; i < parts.length; i++) {
         if (i < parts.length - 1) {
-          tokens.push(parts[i] + "-");
+          tokens.push(parts[i]! + "-");
         } else {
-          tokens.push(parts[i]);
+          tokens.push(parts[i]!);
         }
       }
     } else {
@@ -438,7 +438,6 @@ function getStateAt(targetChars: number, data: any): State {
           if (currentToken.endsWith("-")) {
             const tentative = s.currentLine + nextToken;
             if (tentative.length > LINE_WIDTH) {
-              s.lines.push(s.currentLine);
               s.currentLine = "";
             }
             s.tokenIndex++;
@@ -447,7 +446,6 @@ function getStateAt(targetChars: number, data: any): State {
           } else {
             const tentative = s.currentLine + " " + nextToken;
             if (tentative.length > LINE_WIDTH) {
-              s.lines.push(s.currentLine);
               s.currentLine = "";
               s.tokenIndex++;
               s.charInToken = 0;
@@ -461,7 +459,6 @@ function getStateAt(targetChars: number, data: any): State {
           const nextFirstToken = tokenizeNumber(nextNum)[0]!;
           const tentative = s.currentLine + " " + nextFirstToken;
           if (tentative.length > LINE_WIDTH) {
-            s.lines.push(s.currentLine);
             s.currentLine = "";
             s.currentNumber = nextNum;
             s.tokens = tokenizeNumber(nextNum);
@@ -702,18 +699,22 @@ export function App() {
   };
 
   useEffect(() => {
-    const currentPageIdx = Math.floor(state.globalLineIndex / 40);
-    setRenderedRange((prev) => {
-      if (currentPageIdx > prev.end) {
-        return {
-          start: Math.max(0, currentPageIdx - 2),
-          end: currentPageIdx
-        };
-      }
-      return prev;
-    });
-
+    // Only let the caret pull the rendered range (and the viewport) when the
+    // user is parked at the bottom. While scrolled up, handleScroll is the sole
+    // writer of renderedRange, so the user's scrolled-to pages stay put instead
+    // of being snapped back to the typing page on every tick.
     if (isAtBottomRef.current) {
+      const currentPageIdx = Math.floor(state.globalLineIndex / 40);
+      setRenderedRange((prev) => {
+        if (currentPageIdx > prev.end) {
+          return {
+            start: Math.max(0, currentPageIdx - 2),
+            end: currentPageIdx
+          };
+        }
+        return prev;
+      });
+
       caretRef.current?.scrollIntoView({ block: "nearest", behavior: "auto" });
     }
   }, [state.currentLine, state.globalLineIndex]);
