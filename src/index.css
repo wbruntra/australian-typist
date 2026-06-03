@@ -490,3 +490,14 @@
   cursor: pointer;
 }
 
+.now-btn {
+  margin-left: 4px;
+  padding: 1px 6px;
+  font-size: 10px;
+  opacity: 0.6;
+}
+
+.now-btn:hover {
+  opacity: 1;
+}
+
