@@ -7,22 +7,61 @@ import {
   precompute,
   step,
   tokenizeNumber,
+  getPriorDelays,
+  getBreakDelay,
+  getTicksAtLineStart,
+  getTotalTicks,
 } from "./engine";
 
-// Step from the very beginning until exactly `target` characters have been
-// typed, returning the partial-line state. This is the ground truth that the
-// precompute + binary-search `getStateAt` pipeline must reproduce.
-function stateByStepping(target: number): State {
-  const s = makeInitialState();
-  let completedChars = 0;
-  while (completedChars + s.currentLine.length < target) {
-    const { completedLine } = step(s);
-    if (completedLine !== null) completedChars += completedLine.length;
+// Reconstruct the state at targetTicks by stepping from the start (ground truth)
+function stateBySteppingTicks(targetTicks: number, data: any): State {
+  const totalTicks = getTotalTicks(data);
+  const clampedTicks = Math.min(targetTicks, totalTicks);
+
+  // Find which line we are on using the mathematical formulas
+  let low = 0;
+  let high = data.lineOffsets.length - 1;
+  let lineIndex = 0;
+  while (low <= high) {
+    const mid = (low + high) >> 1;
+    if (getTicksAtLineStart(mid, data.lineOffsets) <= clampedTicks) {
+      lineIndex = mid;
+      low = mid + 1;
+    } else {
+      high = mid - 1;
+    }
   }
-  // At an exact line boundary, `getStateAt` represents the position as the
-  // START of the next line (the wrap has happened). Consume that one pending
-  // wrap so both conventions agree. A peek on a clone keeps `s` untouched.
-  if (step({ ...s }).completedLine !== null) {
+
+  // Are we in the pause before lineIndex + 1?
+  const nextLineIndex = lineIndex + 1;
+  if (nextLineIndex < data.lineOffsets.length) {
+    const ticksAtNextStart = getTicksAtLineStart(nextLineIndex, data.lineOffsets);
+    const breakDelay = getBreakDelay(lineIndex);
+    const pauseStartTick = ticksAtNextStart - breakDelay + 1;
+
+    if (clampedTicks >= pauseStartTick) {
+      // Return start of next line with empty currentLine
+      const s = makeInitialState();
+      let completedLines = 0;
+      while (completedLines < nextLineIndex) {
+        const { completedLine } = step(s);
+        if (completedLine !== null) completedLines++;
+      }
+      s.currentLine = "";
+      return s;
+    }
+  }
+
+  // Actively typing on lineIndex
+  const ticksAtStart = getTicksAtLineStart(lineIndex, data.lineOffsets);
+  const charsInLine = clampedTicks - ticksAtStart;
+  const s = makeInitialState();
+  let completedLines = 0;
+  while (completedLines < lineIndex) {
+    const { completedLine } = step(s);
+    if (completedLine !== null) completedLines++;
+  }
+  while (s.currentLine.length < charsInLine) {
     step(s);
   }
   return s;
@@ -61,28 +100,46 @@ test("lineOffsets are strictly increasing and match line lengths", () => {
   }
 });
 
-test("getStateAt reconstructs the stepped state at sampled offsets", () => {
+test("getStateAt reconstructs the stepped state at sampled tick offsets", () => {
   const data = precompute(undefined, 200);
-  // Spot-check at every line boundary and a handful of mid-line positions.
+  const totalTicks = getTotalTicks(data);
+
+  // Spot-check at every line boundary, during pauses, and mid-line positions.
   const targets = new Set<number>();
+  targets.add(0);
   for (let i = 0; i < data.lineOffsets.length; i++) {
-    const start = data.lineOffsets[i]!;
-    const end = i + 1 < data.lineOffsets.length ? data.lineOffsets[i + 1]! : data.totalChars;
-    targets.add(start);
-    targets.add(Math.floor((start + end) / 2));
-    targets.add(Math.max(start, end - 1));
+    const ticksAtStart = getTicksAtLineStart(i, data.lineOffsets);
+    const lineLen = data.allLines[i]?.length || 0;
+    
+    // Start of typing on line i
+    targets.add(ticksAtStart);
+    // Mid line
+    targets.add(ticksAtStart + Math.floor(lineLen / 2));
+    // End of line typing
+    targets.add(ticksAtStart + lineLen);
+
+    // Pause ticks before next line
+    if (i + 1 < data.lineOffsets.length) {
+      const ticksAtNextStart = getTicksAtLineStart(i + 1, data.lineOffsets);
+      const delay = getBreakDelay(i);
+      for (let d = 1; d <= delay; d++) {
+        targets.add(ticksAtNextStart - d);
+      }
+    }
   }
+  targets.add(totalTicks);
+
   for (const target of targets) {
-    expect(comparable(getStateAt(target, data))).toEqual(comparable(stateByStepping(target)));
+    expect(comparable(getStateAt(target, data))).toEqual(comparable(stateBySteppingTicks(target, data)));
   }
 });
 
 test("getStateAt rebuilds the full text of a completed line", () => {
   const data = precompute(undefined, 200);
   const lineIndex = 10;
-  const start = data.lineOffsets[lineIndex]!;
-  const end = data.lineOffsets[lineIndex + 1]!;
+  const ticksAtStart = getTicksAtLineStart(lineIndex, data.lineOffsets);
+  const lineLen = data.allLines[lineIndex]!.length;
   // Stepping to the last character of the line should reproduce its full text.
-  const s = getStateAt(end - 1, data);
-  expect(s.currentLine).toBe(data.allLines[lineIndex]!.slice(0, end - 1 - start));
+  const s = getStateAt(ticksAtStart + lineLen, data);
+  expect(s.currentLine).toBe(data.allLines[lineIndex]!);
 });

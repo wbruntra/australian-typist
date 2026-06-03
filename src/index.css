@@ -501,3 +501,373 @@
   opacity: 1;
 }
 
+/* Custom Vintage Date-Time Picker Styles */
+.vintage-picker-container {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.vintage-picker-trigger {
+  background: rgba(20, 12, 6, 0.45);
+  border: 1px solid rgba(241, 231, 208, 0.25);
+  color: var(--paper);
+  font-family: "Special Elite", "Courier Prime", monospace;
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+  letter-spacing: 0.05em;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  user-select: none;
+}
+
+.vintage-picker-trigger:focus,
+.vintage-picker-trigger:hover {
+  border-color: rgba(241, 231, 208, 0.55);
+  background: rgba(20, 12, 6, 0.65);
+}
+
+.picker-icon {
+  font-size: 11px;
+  opacity: 0.85;
+}
+
+.picker-value {
+  letter-spacing: 0.05em;
+}
+
+.picker-arrow {
+  font-size: 9px;
+  opacity: 0.6;
+  margin-left: 2px;
+}
+
+.vintage-picker-popover {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  box-shadow:
+    0 15px 35px rgba(0, 0, 0, 0.65),
+    0 5px 15px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(0, 0, 0, 0.15);
+  animation: vintage-pop-up 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes vintage-pop-up {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.vintage-calendar-card {
+  width: 310px;
+  background: var(--paper);
+  color: var(--ink);
+  padding: 18px 16px;
+  border-radius: 3px;
+  border: 3px double var(--ink-soft);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.5) inset;
+  position: relative;
+  box-sizing: border-box;
+  font-family: "Special Elite", "Courier Prime", monospace;
+  isolation: isolate;
+}
+
+/* Paper aging overlay inside popover */
+.vintage-calendar-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse 85% 85% at 50% 50%,
+      transparent 30%,
+      rgba(120, 90, 50, 0.08) 100%
+    );
+  border-radius: inherit;
+}
+
+.vintage-calendar-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.3;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><filter id='n2'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.35  0 0 0 0 0.25  0 0 0 0 0.1  0 0 0 0.12 0'/></filter><rect width='100%' height='100%' filter='url(%23n2)'/></svg>");
+  border-radius: inherit;
+}
+
+.vintage-calendar-selectors {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.selector-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.selector-label {
+  font-size: 13px;
+  font-weight: bold;
+  letter-spacing: 0.12em;
+  color: var(--ink);
+  text-align: center;
+  flex: 1;
+  user-select: none;
+}
+
+.typewriter-key {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #ece3cf;
+  border: 1.5px solid #8e826b;
+  box-shadow:
+    0 2px 3px rgba(0, 0, 0, 0.25),
+    0 -1px 0 rgba(255, 255, 255, 0.6) inset;
+  color: var(--ink-soft);
+  font-size: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  outline: none;
+  transition: transform 0.05s ease, box-shadow 0.05s ease, background-color 0.1s ease;
+  user-select: none;
+}
+
+.typewriter-key:hover {
+  background: #f5eedf;
+  color: var(--ink);
+}
+
+.typewriter-key:active {
+  transform: translateY(1.5px);
+  box-shadow:
+    0 0.5px 1px rgba(0, 0, 0, 0.15),
+    0 -0.5px 0 rgba(255, 255, 255, 0.6) inset;
+}
+
+.typewriter-key.small {
+  width: 20px;
+  height: 20px;
+  font-size: 8px;
+}
+
+.calendar-week-header {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-size: 10px;
+  font-weight: bold;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px dashed rgba(74, 58, 42, 0.2);
+  user-select: none;
+}
+
+.week-day {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.calendar-days-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.calendar-day-empty {
+  aspect-ratio: 1;
+}
+
+.calendar-day-btn {
+  aspect-ratio: 1;
+  border: none;
+  background: transparent;
+  color: var(--ink);
+  font-family: "Special Elite", "Courier Prime", monospace;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: all 0.1s ease;
+  border-radius: 4px;
+  outline: none;
+  padding: 0;
+  user-select: none;
+}
+
+.calendar-day-btn:hover:not(.disabled):not(.stamped-active) {
+  background: rgba(74, 58, 42, 0.1);
+}
+
+.calendar-day-btn.disabled {
+  color: var(--paper-edge);
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
+.calendar-day-btn.stamped-active {
+  color: var(--accent) !important;
+  font-weight: bold;
+}
+
+/* Stamped ink active selection effect */
+.calendar-day-btn.stamped-active::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border: 1.5px dashed var(--accent);
+  border-radius: 50%;
+  transform: rotate(8deg);
+  opacity: 0.85;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+  animation: stamp-press 0.12s cubic-bezier(0.175, 0.885, 0.32, 1.2) forwards;
+}
+
+@keyframes stamp-press {
+  from {
+    transform: scale(1.3) rotate(0deg);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) rotate(8deg);
+    opacity: 0.85;
+  }
+}
+
+.vintage-card-rule {
+  border: 0;
+  height: 1px;
+  border-top: 1px solid rgba(74, 58, 42, 0.2);
+  margin: 14px 0 10px;
+}
+
+.vintage-time-title {
+  font-size: 10px;
+  font-weight: bold;
+  letter-spacing: 0.22em;
+  color: var(--ink-faint);
+  text-align: center;
+  margin-bottom: 8px;
+  user-select: none;
+}
+
+.vintage-time-selector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.time-dial {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  position: relative;
+}
+
+.dial-value {
+  font-size: 18px;
+  font-weight: bold;
+  background: #ece3cf;
+  border: 1px solid #8e826b;
+  padding: 3px 6px;
+  border-radius: 2px;
+  min-width: 30px;
+  text-align: center;
+  box-shadow: 0 1.5px 3px rgba(0, 0, 0, 0.15) inset;
+  color: var(--ink);
+  position: relative;
+  user-select: none;
+}
+
+.dial-value::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background: rgba(142, 130, 107, 0.3);
+}
+
+.dial-label {
+  font-size: 8px;
+  color: var(--ink-faint);
+  margin-top: 1px;
+  letter-spacing: 0.1em;
+  user-select: none;
+}
+
+.time-colon {
+  font-size: 18px;
+  font-weight: bold;
+  color: var(--ink-soft);
+  line-height: 1;
+  padding-bottom: 10px;
+  user-select: none;
+}
+
+.vintage-picker-footer {
+  display: flex;
+  justify-content: center;
+}
+
+.vintage-picker-commit-btn {
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  font-family: "Special Elite", "Courier Prime", monospace;
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 0.15em;
+  padding: 5px 14px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  outline: none;
+  border-radius: 2px;
+  user-select: none;
+}
+
+.vintage-picker-commit-btn:hover {
+  background: var(--accent);
+  color: var(--paper);
+  box-shadow: 0 4px 10px rgba(138, 26, 26, 0.25);
+}
+
+.vintage-picker-commit-btn:active {
+  transform: translateY(1px);
+}
+
+

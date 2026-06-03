@@ -5,7 +5,10 @@ import {
   Precomputer,
   getStateAt,
   makeInitialState,
+  LINES_PER_PAGE,
+  getTotalTicks,
 } from "./engine";
+import { VintageDateTimePicker } from "./VintageDateTimePicker";
 
 const TYPE_INTERVAL_MS = 200;
 // Default virtual start date: May 1 2026 00:00
@@ -14,7 +17,6 @@ const DEFAULT_START_TIME = new Date(2026, 4, 1, 0, 0, 0).getTime();
 // Page geometry. These pixel heights mirror the rendered `.paper` sizes in
 // index.css (the first page is taller because of its header) and are used to
 // drive scroll virtualization. Keep them in sync with the stylesheet.
-const LINES_PER_PAGE = 40;
 const FIRST_PAGE_PX = 1598;
 const PAGE_PX = 1398;
 
@@ -37,17 +39,17 @@ function formatDuration(ms: number): string {
 }
 
 /** Clamp elapsed ms to [0, completion]. */
-function clampElapsed(elapsedMs: number, totalChars: number): number {
-  return Math.min(Math.max(0, elapsedMs), totalChars * TYPE_INTERVAL_MS);
+function clampElapsed(elapsedMs: number, totalTicks: number): number {
+  return Math.min(Math.max(0, elapsedMs), totalTicks * TYPE_INTERVAL_MS);
 }
 
-function jumpToChars(
-  targetChars: number,
+function jumpToTicks(
+  targetTicks: number,
   data: PrecomputedData,
   setState: (s: State) => void,
   setRenderedRange: (r: { start: number; end: number }) => void,
 ) {
-  const s = getStateAt(targetChars, data);
+  const s = getStateAt(targetTicks, data);
   const pageIdx = Math.floor(s.globalLineIndex / LINES_PER_PAGE);
   setRenderedRange({ start: Math.max(0, pageIdx - 2), end: pageIdx });
   setState(s);
@@ -82,12 +84,12 @@ export function App() {
 
   // Return the active elapsed ms (wall elapsed minus all paused time), capped
   // at completion. Safe to call any time regardless of pause state.
-  const getElapsedMs = (totalChars: number): number => {
+  const getElapsedMs = (totalTicks: number): number => {
     const wallElapsed = Date.now() - startTime;
     const currentPause = pauseStartWallMsRef.current !== null
       ? Date.now() - pauseStartWallMsRef.current
       : 0;
-    return clampElapsed(wallElapsed - totalPausedMsRef.current - currentPause, totalChars);
+    return clampElapsed(wallElapsed - totalPausedMsRef.current - currentPause, totalTicks);
   };
 
   // ----- precomputation -------------------------------------------------------
@@ -111,9 +113,10 @@ export function App() {
     const onPrecomputeDone = (data: PrecomputedData) => {
       setPrecomputedData(data);
       // Fast-forward to "now" using the default start date.
-      const elapsedMs = clampElapsed(Date.now() - DEFAULT_START_TIME, data.totalChars);
-      const targetChars = Math.floor(elapsedMs / TYPE_INTERVAL_MS);
-      jumpToChars(targetChars, data, setState, setRenderedRange);
+      const totalTicks = getTotalTicks(data);
+      const elapsedMs = clampElapsed(Date.now() - DEFAULT_START_TIME, totalTicks);
+      const targetTicks = Math.floor(elapsedMs / TYPE_INTERVAL_MS);
+      jumpToTicks(targetTicks, data, setState, setRenderedRange);
     };
 
     runChunk();
@@ -125,9 +128,10 @@ export function App() {
   // State is a pure function of the clock: no drift accumulation possible.
   useEffect(() => {
     if (!precomputedData || paused) return;
+    const totalTicks = getTotalTicks(precomputedData);
     const id = setInterval(() => {
-      const targetChars = Math.floor(getElapsedMs(precomputedData.totalChars) / TYPE_INTERVAL_MS);
-      setState(getStateAt(targetChars, precomputedData));
+      const targetTicks = Math.floor(getElapsedMs(totalTicks) / TYPE_INTERVAL_MS);
+      setState(getStateAt(targetTicks, precomputedData));
     }, TYPE_INTERVAL_MS);
     return () => clearInterval(id);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -137,9 +141,10 @@ export function App() {
   // immediately even if paused.
   useEffect(() => {
     if (!precomputedData) return;
-    const elapsedMs = getElapsedMs(precomputedData.totalChars);
-    const targetChars = Math.floor(elapsedMs / TYPE_INTERVAL_MS);
-    jumpToChars(targetChars, precomputedData, setState, setRenderedRange);
+    const totalTicks = getTotalTicks(precomputedData);
+    const elapsedMs = getElapsedMs(totalTicks);
+    const targetTicks = Math.floor(elapsedMs / TYPE_INTERVAL_MS);
+    jumpToTicks(targetTicks, precomputedData, setState, setRenderedRange);
     isAtBottomRef.current = true;
     setTimeout(() => {
       const el = paperContainerRef.current;
@@ -199,10 +204,6 @@ export function App() {
     setPaused((p) => !p);
   };
 
-  const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!precomputedData || !e.target.value) return;
-    setStartTime(new Date(e.target.value).getTime());
-  };
 
   // Set the start date to right now, so elapsed = 0 and typing resumes from
   // the very beginning of the manuscript.
@@ -233,7 +234,8 @@ export function App() {
     );
   }
 
-  const currentElapsedMs = getElapsedMs(precomputedData.totalChars);
+  const totalTicks = getTotalTicks(precomputedData);
+  const currentElapsedMs = getElapsedMs(totalTicks);
   const currentPageIndex = Math.floor(state.globalLineIndex / LINES_PER_PAGE);
   const startIdx = Math.min(renderedRange.start, currentPageIndex);
   const endIdx = Math.min(renderedRange.end, currentPageIndex);
@@ -242,9 +244,11 @@ export function App() {
   const topSpacerHeight = startIdx === 0 ? 0 : FIRST_PAGE_PX + (startIdx - 1) * PAGE_PX;
   const bottomSpacerHeight = (currentPageIndex - endIdx) * PAGE_PX;
   const totalCharsTyped =
-    (precomputedData.lineOffsets[state.globalLineIndex] || 0) + state.currentLine.length;
-  const done = totalCharsTyped >= precomputedData.totalChars;
-  const startDateInputValue = new Date(startTime).toISOString().slice(0, 16);
+    (precomputedData.lineOffsets[state.globalLineIndex] || 0) +
+    state.currentLine.length +
+    state.globalLineIndex;
+  const targetTicks = Math.floor(currentElapsedMs / TYPE_INTERVAL_MS);
+  const done = targetTicks >= totalTicks;
 
   return (
     <div className="scene">
@@ -305,11 +309,11 @@ export function App() {
         <div className="status">
           <span className="status-item">
             <span className="status-label">started</span>
-            <input
-              type="datetime-local"
-              className="datetime-input"
-              value={startDateInputValue}
-              onChange={handleStartDateChange}
+            <VintageDateTimePicker
+              value={startTime}
+              onChange={setStartTime}
+              minTime={DEFAULT_START_TIME}
+              maxTime={DEFAULT_START_TIME + totalTicks * TYPE_INTERVAL_MS}
             />
             <button className="btn ghost now-btn" onClick={handleSetStartToNow}>now</button>
           </span>

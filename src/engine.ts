@@ -17,6 +17,9 @@ import { numberToWords } from "./numberToWords";
 
 export const LINE_WIDTH = 65;
 export const MAX_NUMBER = 1_000_000;
+export const LINES_PER_PAGE = 40;
+export const LINE_BREAK_PAUSE_TICKS = 0;
+export const PAGE_BREAK_PAUSE_TICKS = 3;
 
 export type Phase = "token" | "space" | "between";
 
@@ -296,7 +299,49 @@ export function precompute(
  * typed. Binary-searches the line checkpoints, then replays `step()` within
  * that single line up to the requested offset.
  */
-export function getStateAt(targetChars: number, data: PrecomputedData): State {
+/**
+ * Return the total number of delay ticks (pauses + typed newlines)
+ * before starting line `L`.
+ */
+export function getPriorDelays(L: number): number {
+  const pageBreaks = Math.floor(L / LINES_PER_PAGE);
+  const lineBreaks = L - pageBreaks;
+  return pageBreaks * (1 + PAGE_BREAK_PAUSE_TICKS) + lineBreaks * (1 + LINE_BREAK_PAUSE_TICKS);
+}
+
+/**
+ * Return the delay ticks (pause + typed newline) for the break after line `L`
+ * (which occurs before line `L+1` starts).
+ */
+export function getBreakDelay(L: number): number {
+  const isPageBreak = (L + 1) % LINES_PER_PAGE === 0;
+  return 1 + (isPageBreak ? PAGE_BREAK_PAUSE_TICKS : LINE_BREAK_PAUSE_TICKS);
+}
+
+/**
+ * Returns the total elapsed ticks at the start of line `L` (just as the pause
+ * ends and we are ready to type the first character).
+ */
+export function getTicksAtLineStart(L: number, lineOffsets: Uint32Array | number[]): number {
+  return (lineOffsets[L] || 0) + getPriorDelays(L);
+}
+
+/**
+ * Returns the total ticks required to type the entire manuscript.
+ */
+export function getTotalTicks(data: PrecomputedData): number {
+  const L_last = data.lineOffsets.length - 1;
+  if (L_last < 0) return 0;
+  const lastLineLen = data.totalChars - data.lineOffsets[L_last]!;
+  return getTicksAtLineStart(L_last, data.lineOffsets) + lastLineLen;
+}
+
+/**
+ * Reconstruct the exact engine state after `targetTicks` ticks have elapsed.
+ * Binary-searches the line checkpoints, then replays `step()` within
+ * that single line up to the requested offset.
+ */
+export function getStateAt(targetTicks: number, data: PrecomputedData): State {
   const { lineOffsets, currentNumbers, tokenIndexes, charInTokens, phases } = data;
 
   let low = 0;
@@ -304,7 +349,7 @@ export function getStateAt(targetChars: number, data: PrecomputedData): State {
   let lineIndex = 0;
   while (low <= high) {
     const mid = (low + high) >> 1;
-    if (lineOffsets[mid]! <= targetChars) {
+    if (getTicksAtLineStart(mid, lineOffsets) <= targetTicks) {
       lineIndex = mid;
       low = mid + 1;
     } else {
@@ -312,7 +357,29 @@ export function getStateAt(targetChars: number, data: PrecomputedData): State {
     }
   }
 
-  const charsInLine = targetChars - lineOffsets[lineIndex]!;
+  // Check if we are currently in the pause before starting nextLineIndex.
+  const nextLineIndex = lineIndex + 1;
+  if (nextLineIndex < lineOffsets.length) {
+    const ticksAtNextStart = getTicksAtLineStart(nextLineIndex, lineOffsets);
+    const breakDelay = getBreakDelay(lineIndex);
+    const pauseStartTick = ticksAtNextStart - breakDelay + 1;
+
+    if (targetTicks >= pauseStartTick) {
+      const num = currentNumbers[nextLineIndex]!;
+      return {
+        globalLineIndex: nextLineIndex,
+        currentLine: "",
+        currentNumber: num,
+        tokens: tokenizeNumber(num),
+        tokenIndex: tokenIndexes[nextLineIndex]!,
+        charInToken: charInTokens[nextLineIndex]!,
+        phase: numToPhase(phases[nextLineIndex]!),
+      };
+    }
+  }
+
+  const ticksAtStart = getTicksAtLineStart(lineIndex, lineOffsets);
+  const charsInLine = targetTicks - ticksAtStart;
   const num = currentNumbers[lineIndex]!;
 
   const s: State = {

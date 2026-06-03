@@ -15,6 +15,7 @@
 | 2026-06-03 | user | If the next number starts on a new line, the previous line did not end in a comma. | Append the comma to the final token of each number during tokenization, so the comma counts towards line width calculations and wraps with the number, and separate numbers with a single space. Increase LINE_WIDTH to 65, set .body width to 66ch, paper max-width to 850px, and font-size to 16px. |
 | 2026-06-03 | user | Displaying typewriter text as a flat endless sheet loses the tactile feel of physical pages and lacks page numbering. | Group lines into logical pages of height 40, render pages as physical stacked sheets with fixed heights, show a page number footer (e.g. "Page P of N") at the bottom of each page, and use top/bottom layout spacers to virtualize the scroll stack so the user can scroll smoothly through the entire page stack. |
 | 2026-06-03 | user | Re-initializing the typewriter state on date selection causes the cursor/text to jump out of sync and skip typing animation of wrapped numbers. | Have the worker save the exact token index, character index, and state machine phase at the start of each line wrap in Uint8Arrays, and initialize the main thread state with these checkpoints in getStateAt. |
+| 2026-06-03 | user | Line wraps and page transitions happen instantly with no pause, failing to capture the physical pacing of a typewriter carriage return or paper feed. | Introduce pause ticks (1 for line wrap, 8 for page wrap) and treat the newline character as a typed character (1 tick). Use a closed-form formula to map elapsed ticks to lines and characters, and update the getStateAt binary search to look up checkpoints by ticks. |
 
 ## User Preferences
 - **Space-separated full numbers**: Integers represented as words should not have commas inside them (e.g. `one thousand one hundred` instead of `one thousand, one hundred`). Commas should only separate distinct integers in the list.
@@ -28,7 +29,11 @@
 - Using `isAtBottomRef` updated on container scroll to toggle caret auto-scrolling with `scrollIntoView({ block: "nearest" })` smoothly.
 - Inline Web Worker blobs to run background computations with zero multi-file build configuration.
 - Custom DOM virtualization using top and bottom spacer height blocks matching exactly the number of scrolled off-screen lines.
+- Implementing pauses at line and page boundaries by converting wall-clock elapsed time to discrete virtual ticks, then using binary search over line start ticks to reconstruct the page state in O(log N) time.
 
 ## Domain Notes
 - The typing exercise goes from 1 to 1,000,000.
 - `LINE_WIDTH` is 65 characters.
+- Page break pause: 8 ticks (1.6s).
+- Line break pause: 1 tick (200ms).
+- Newline character: 1 tick (200ms).
