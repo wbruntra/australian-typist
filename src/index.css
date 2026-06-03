@@ -1,0 +1,492 @@
+@import "tailwindcss";
+
+:root {
+  --ink: #1a1410;
+  --ink-soft: #4a3a2a;
+  --ink-faint: #8a7a64;
+  --caret: #8a1a1a;
+  --paper: #f1e7d0;
+  --paper-edge: #d8c9a8;
+  --paper-stain: #c8b58a;
+  --desk: #1c130c;
+  --desk-2: #2a1d12;
+  --desk-3: #120a06;
+  --accent: #8a1a1a;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    margin: 0;
+    background: var(--desk);
+    color: var(--ink);
+    font-family: "Courier Prime", "Courier New", monospace;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+}
+
+.scene {
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(
+      ellipse 90% 70% at 50% 0%,
+      rgba(180, 130, 70, 0.18) 0%,
+      rgba(80, 40, 20, 0.0) 60%
+    ),
+    radial-gradient(
+      ellipse 100% 100% at 50% 50%,
+      var(--desk-2) 0%,
+      var(--desk) 40%,
+      var(--desk-3) 100%
+    );
+}
+
+.paper-container {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 16px 120px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(180, 130, 70, 0.3) transparent;
+}
+
+.paper-container::-webkit-scrollbar {
+  width: 8px;
+}
+.paper-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+.paper-container::-webkit-scrollbar-thumb {
+  background: rgba(180, 130, 70, 0.25);
+  border-radius: 4px;
+}
+.paper-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(180, 130, 70, 0.4);
+}
+
+.paper {
+  position: relative;
+  width: 100%;
+  max-width: 850px;
+  min-height: 1350px;
+  background: var(--paper);
+  color: var(--ink);
+  padding: 64px 72px 60px;
+  border-radius: 2px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.5) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.08) inset,
+    0 30px 60px -20px rgba(0, 0, 0, 0.6),
+    0 12px 24px -8px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(0, 0, 0, 0.05);
+  isolation: isolate;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  margin-bottom: 48px;
+}
+
+.paper.first-page {
+  min-height: 1550px;
+}
+
+.paper-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.paper-footer {
+  margin-top: auto;
+  padding-top: 20px;
+  border-top: 1px dashed rgba(74, 58, 42, 0.15);
+  text-align: center;
+  font-family: "Special Elite", "Courier Prime", monospace;
+  font-size: 11px;
+  color: var(--ink-faint);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  user-select: none;
+}
+
+.paper::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse 80% 60% at 50% 30%,
+      transparent 30%,
+      rgba(120, 90, 50, 0.12) 100%
+    ),
+    radial-gradient(
+      ellipse 40% 30% at 20% 80%,
+      rgba(140, 100, 50, 0.08) 0%,
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse 35% 25% at 85% 75%,
+      rgba(140, 100, 50, 0.08) 0%,
+      transparent 60%
+    );
+  mix-blend-mode: multiply;
+  border-radius: inherit;
+}
+
+.paper::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.45;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.35  0 0 0 0 0.25  0 0 0 0 0.1  0 0 0 0.18 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  border-radius: inherit;
+}
+
+.paper > * {
+  position: relative;
+  z-index: 1;
+}
+
+.paper-header {
+  text-align: center;
+  margin-bottom: 36px;
+  user-select: none;
+}
+
+.kicker {
+  font-family: "Special Elite", "Courier Prime", monospace;
+  font-size: 11px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin: 0 0 18px;
+}
+
+.title {
+  font-family: "Special Elite", "Courier Prime", monospace;
+  font-size: 38px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin: 0 0 6px;
+  color: var(--ink);
+  font-weight: 400;
+}
+
+.subtitle {
+  font-family: "IM Fell English", "Courier Prime", serif;
+  font-style: italic;
+  font-size: 15px;
+  color: var(--ink-soft);
+  margin: 0 0 22px;
+  letter-spacing: 0.01em;
+}
+
+.rule {
+  border: 0;
+  height: 1px;
+  background: var(--ink-soft);
+  margin: 0 auto 8px;
+  width: 60%;
+  opacity: 0.55;
+}
+
+.rule::after {
+  content: "";
+  display: block;
+  border-top: 1px solid var(--ink-soft);
+  margin-top: 3px;
+  width: 60%;
+  margin-left: auto;
+  margin-right: auto;
+  opacity: 0.55;
+}
+
+.colophon {
+  font-family: "Courier Prime", monospace;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin: 14px 0 0;
+}
+
+.body {
+  font-family: "Courier Prime", "Courier New", monospace;
+  font-size: 16px;
+  letter-spacing: 0.01em;
+  min-height: 320px;
+  color: var(--ink);
+  word-spacing: 0;
+  width: 66ch;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.line {
+  height: 30px;
+  line-height: 30px;
+  white-space: pre;
+  overflow: hidden;
+}
+
+.line.current {
+  height: 30px;
+  line-height: 30px;
+}
+
+.ellipsis {
+  font-family: "Courier Prime", monospace;
+  font-size: 12px;
+  letter-spacing: 0.3em;
+  color: var(--ink-faint);
+  text-align: center;
+  padding: 8px 0 14px;
+  border-bottom: 1px dashed rgba(74, 58, 42, 0.25);
+  margin-bottom: 6px;
+}
+
+.caret {
+  display: inline-block;
+  width: 0.55em;
+  height: 1em;
+  background: var(--caret);
+  margin-left: 1px;
+  vertical-align: text-bottom;
+  animation: blink 1s steps(2) infinite;
+  box-shadow: 0 0 8px rgba(138, 26, 26, 0.5);
+}
+
+@keyframes blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  50.01%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.status-container {
+  flex: 0 0 auto;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  background: rgba(20, 12, 6, 0.93);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(180, 130, 70, 0.25);
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.6);
+  z-index: 100;
+}
+
+.status {
+  width: 100%;
+  max-width: 760px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 24px;
+  color: rgba(241, 231, 208, 0.85);
+  font-family: "Special Elite", "Courier Prime", monospace;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  flex-wrap: wrap;
+}
+
+.status-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.status-label {
+  color: rgba(241, 231, 208, 0.45);
+}
+
+.status-value {
+  color: var(--paper);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.status-sep {
+  color: rgba(241, 231, 208, 0.25);
+}
+
+.status-spacer {
+  flex: 1 1 auto;
+}
+
+.btn {
+  font-family: "Special Elite", "Courier Prime", monospace;
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  background: transparent;
+  color: var(--paper);
+  border: 1px solid rgba(241, 231, 208, 0.45);
+  padding: 7px 16px;
+  border-radius: 1px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn:hover {
+  background: rgba(241, 231, 208, 0.1);
+  border-color: var(--paper);
+  color: var(--paper);
+}
+
+.btn.ghost {
+  border-color: rgba(241, 231, 208, 0.2);
+  color: rgba(241, 231, 208, 0.55);
+}
+
+.btn.ghost:hover {
+  color: var(--paper);
+  border-color: rgba(241, 231, 208, 0.45);
+}
+
+@media (max-width: 700px) {
+  .paper {
+    padding: 40px 28px 60px;
+  }
+  .title {
+    font-size: 28px;
+    letter-spacing: 0.12em;
+  }
+  .body {
+    font-size: 14px;
+    width: 66ch;
+  }
+  .paper-container {
+    padding: 24px 8px 100px;
+  }
+  .status {
+    font-size: 10px;
+    gap: 10px;
+    padding: 10px 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .caret {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+/* --- Premium Loader & Timeline Controls --- */
+
+.loader-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--desk-3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  font-family: "Special Elite", "Courier Prime", monospace;
+  background-image:
+    radial-gradient(
+      ellipse 90% 70% at 50% 50%,
+      var(--desk-2) 0%,
+      var(--desk-3) 100%
+    );
+}
+
+.loader-box {
+  background: var(--desk-2);
+  border: 1px solid rgba(180, 130, 70, 0.2);
+  padding: 40px 60px;
+  border-radius: 4px;
+  text-align: center;
+  box-shadow:
+    0 30px 70px rgba(0, 0, 0, 0.8),
+    0 0 0 1px rgba(180, 130, 70, 0.05);
+  max-width: 480px;
+  width: 90%;
+  backdrop-filter: blur(10px);
+}
+
+.loader-title {
+  color: var(--paper);
+  font-size: 20px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  margin: 0 0 28px;
+  font-weight: 400;
+}
+
+.loader-bar-bg {
+  width: 100%;
+  height: 6px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.loader-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.1s linear;
+  box-shadow: 0 0 8px var(--accent);
+}
+
+.loader-progress {
+  color: var(--ink-faint);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.datetime-input {
+  background: rgba(20, 12, 6, 0.4);
+  border: 1px solid rgba(241, 231, 208, 0.25);
+  color: var(--paper);
+  font-family: "Special Elite", "Courier Prime", monospace;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+  letter-spacing: 0.05em;
+  transition: all 0.15s ease;
+}
+
+.datetime-input:focus,
+.datetime-input:hover {
+  border-color: rgba(241, 231, 208, 0.55);
+  background: rgba(20, 12, 6, 0.6);
+}
+
+.datetime-input::-webkit-calendar-picker-indicator {
+  filter: invert(0.9) sepia(0.2) saturate(0.5);
+  cursor: pointer;
+}
+
